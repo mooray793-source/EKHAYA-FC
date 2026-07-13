@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:500px;">
+    <h2 style="margin-bottom:16px;">Add Product</h2>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-gold">Save Product</button>
+    </form>
+</div>
+{% endblock %}

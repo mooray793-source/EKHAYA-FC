@@ -1,0 +1,46 @@
+:root {
+    --primary: #1a1a1a;
+    --secondary: #1a1a1a;
+    --accent: #c9a24b;
+    --primary-fg: #fff;
+
+    --header-color: #c9a24b;
+    --header-branding-color: #c9a24b;
+    --header-bg: #1a1a1a;
+    --header-link-color: #c9a24b;
+
+    --breadcrumbs-fg: #1a1a1a;
+    --breadcrumbs-bg: #c9a24b;
+
+    --button-bg: #c9a24b;
+    --button-fg: #1a1a1a;
+    --button-hover-bg: #b38f3d;
+    --default-button-bg: #c9a24b;
+    --default-button-hover-bg: #b38f3d;
+
+    --link-fg: #1a1a1a;
+    --link-hover-color: #c9a24b;
+    --link-selected-fg: #c9a24b;
+}
+
+a:link, a:visited {
+    color: #1a1a1a;
+}
+
+.button, input[type=submit], input[type=button], .submit-row input, a.button {
+    background: #c9a24b;
+    color: #1a1a1a;
+}
+
+.button:hover, input[type=submit]:hover, input[type=button]:hover {
+    background: #b38f3d;
+}
+
+div.breadcrumbs {
+    background: #c9a24b;
+    color: #1a1a1a;
+}
+
+div.breadcrumbs a {
+    color: #1a1a1a;
+}

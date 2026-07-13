@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="margin-bottom:16px;">Reports & Analytics</h2>
+
+<div class="card">
+    <h3>Stock Valuation</h3>
+    <p style="font-size:24px;">MWK {{ stock_valuation|floatformat:0 }}</p>
+</div>
+
+<div class="card">
+    <h3>Sales (Last 30 Days)</h3>
+    <p>Total transactions: {{ recent_sales_count }}</p>
+    <p>Total revenue: MWK {{ total_revenue|floatformat:0 }}</p>
+</div>
+
+<div class="card">
+    <h3>Best Selling Products (Last 30 Days)</h3>
+    <table>
+        <tr><th>Product</th><th>Units Sold</th></tr>
+        {% for item in best_sellers %}
+        <tr><td>{{ item.product__name }}</td><td>{{ item.total_qty }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2">No sales in this period.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Low Stock Report</h3>
+    <table>
+        <tr><th>Product</th><th>Qty</th><th>Min Level</th></tr>
+        {% for p in low_stock %}
+        <tr><td>{{ p.name }}</td><td>{{ p.quantity }}</td><td>{{ p.minimum_stock_level }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3">No low stock items.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Out of Stock</h3>
+    <table>
+        <tr><th>Product</th><th>Category</th></tr>
+        {% for p in out_of_stock %}
+        <tr><td>{{ p.name }}</td><td>{{ p.category }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2">No out-of-stock items.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Expired Products</h3>
+    <table>
+        <tr><th>Product</th><th>Expiry Date</th></tr>
+        {% for p in expired %}
+        <tr><td>{{ p.name }}</td><td>{{ p.expiry_date|date:"d M Y" }}</td></tr>
+        {% empty %}
+        <tr><td colspan="2">No expired products.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Purchases by Supplier</h3>
+    <table>
+        <tr><th>Supplier</th><th>Total Units</th><th>Total Cost</th></tr>
+        {% for item in supplier_purchases %}
+        <tr><td>{{ item.supplier__name }}</td><td>{{ item.total_qty }}</td><td>MWK {{ item.total_cost }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3">No purchases recorded.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

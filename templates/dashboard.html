@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="margin-bottom:16px;">Dashboard</h2>
+
+{% if low_stock_products or expiring_soon %}
+<div class="alert-box">
+    <strong>⚠ Notifications</strong>
+    <ul style="margin-top:8px;margin-left:18px;">
+        {% for p in low_stock_products %}
+        <li>Low stock warning: <strong>{{ p.name }}</strong> has only {{ p.quantity }} left (min {{ p.minimum_stock_level }}).</li>
+        {% endfor %}
+        {% for p in expiring_soon %}
+        <li>Expiry warning: <strong>{{ p.name }}</strong> expires on {{ p.expiry_date|date:"d M Y" }}.</li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+    <div class="card"><h3>Total Products</h3><p style="font-size:28px;">{{ total_products }}</p></div>
+    <div class="card"><h3>Total Stock Value</h3><p style="font-size:28px;">MWK {{ total_stock_value|floatformat:0 }}</p></div>
+    <div class="card"><h3>Low Stock Items</h3><p style="font-size:28px;">{{ low_stock_items }}</p></div>
+    <div class="card"><h3>Out of Stock</h3><p style="font-size:28px;">{{ out_of_stock }}</p></div>
+</div>
+
+<div class="card">
+    <h3 style="margin-bottom:16px;">Manage System</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
+        <a href="{% url 'product_list' %}" class="btn-gold" style="text-align:center;">Products ({{ total_products }})</a>
+        {% if profile.can_receive_stock %}
+        <a href="{% url 'product_add' %}" class="btn-gold" style="text-align:center;">+ Add Product</a>
+        <a href="{% url 'stock_in' %}" class="btn-gold" style="text-align:center;">Stock In</a>
+        {% endif %}
+        {% if profile.can_issue_stock %}
+        <a href="{% url 'stock_out' %}" class="btn-gold" style="text-align:center;">Stock Out</a>
+        {% endif %}
+        <a href="{% url 'sale_add' %}" class="btn-gold" style="text-align:center;">+ Record Sale</a>
+        {% if profile.can_view_reports %}
+        <a href="{% url 'reports' %}" class="btn-gold" style="text-align:center;">Reports</a>
+        {% endif %}
+        {% if profile.can_manage_master_data %}
+        <a href="{% url 'category_list' %}" class="btn-gold" style="text-align:center;">Categories ({{ total_categories }})</a>
+        <a href="{% url 'supplier_list' %}" class="btn-gold" style="text-align:center;">Suppliers ({{ total_suppliers }})</a>
+        <a href="{% url 'location_list' %}" class="btn-gold" style="text-align:center;">Locations ({{ total_locations }})</a>
+        <a href="{% url 'department_list' %}" class="btn-gold" style="text-align:center;">Departments ({{ total_departments }})</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card">
+    <h3>Recent Sales</h3>
+    <table>
+        <tr><th>Product</th><th>Qty</th><th>Total</th><th>Date</th></tr>
+        {% for sale in recent_sales %}
+        <tr><td>{{ sale.product.name }}</td><td>{{ sale.quantity }}</td><td>MWK {{ sale.total }}</td><td>{{ sale.date|date:"d M Y" }}</td></tr>
+        {% empty %}
+        <tr><td colspan="4">No sales yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+
+<div class="card">
+    <h3>Recent Purchases</h3>
+    <table>
+        <tr><th>Product</th><th>Qty</th><th>Cost</th><th>Date</th></tr>
+        {% for purchase in recent_purchases %}
+        <tr><td>{{ purchase.product.name }}</td><td>{{ purchase.quantity }}</td><td>MWK {{ purchase.cost }}</td><td>{{ purchase.purchase_date|date:"d M Y" }}</td></tr>
+        {% empty %}
+        <tr><td colspan="4">No purchases yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

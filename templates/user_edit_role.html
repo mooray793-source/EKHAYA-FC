@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:450px;">
+    <h2 style="margin-bottom:16px;">Edit Role: {{ target_user.username }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-gold">Save Role</button>
+    </form>
+</div>
+{% endblock %}

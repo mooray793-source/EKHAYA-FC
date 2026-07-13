@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 style="margin-bottom:16px;">Products</h2>
+<form method="get" style="margin-bottom:16px;max-width:300px;">
+    <input type="text" name="q" placeholder="Search products..." value="{{ query }}">
+</form>
+<div class="card">
+    <table>
+            <tr><th>Name</th><th>Code</th><th>Category</th><th>Location</th><th>Qty</th><th>Price</th><th>Status</th><th>Barcode</th></tr>
+            <td>{{ product.name }}</td>
+            <td>{{ product.code }}</td>
+            <td>{{ product.category }}</td>
+            <td>{{ product.location }}</td>
+            <td>{{ product.quantity }}</td>
+            <td>MWK {{ product.selling_price }}</td>
+            <td>{{ product.status }}</td>
+            <td><img src="{% url 'product_barcode' product.id %}" alt="barcode" style="height:40px;"></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">No products found.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}

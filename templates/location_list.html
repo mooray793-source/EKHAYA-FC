@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:500px;">
+    <h2 style="margin-bottom:16px;">Add Location</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-gold">Save Location</button>
+    </form>
+</div>
+<div class="card">
+    <h3>Locations</h3>
+    <table>
+        <tr><th>Store</th><th>Box</th><th>Notes</th></tr>
+        {% for l in locations %}
+        <tr><td>{{ l.store }}</td><td>{{ l.box_number }}</td><td>{{ l.notes }}</td></tr>
+        {% empty %}
+        <tr><td colspan="3">No locations yet.</td></tr>
+        {% endfor %}
+    </table>
+</div>
+{% endblock %}
