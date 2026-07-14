@@ -4,19 +4,25 @@
 <a href="{% url 'user_create' %}" class="btn-gold" style="margin-bottom:16px;display:inline-block;">+ Add User</a>
 <div class="card">
     <table>
-        <tr><th>Username</th><th>Email</th><th>Role</th><th>Actions</th></tr>
+        <tr><th>Username</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
         {% for u in users %}
         <tr>
             <td>{{ u.username }}</td>
             <td>{{ u.email }}</td>
             <td>{{ u.profile.role|default:"sales" }}</td>
+            <td>{% if u.is_active %}Active{% else %}<span style="color:#dc3545;">Deactivated</span>{% endif %}</td>
             <td>
                 <a href="{% url 'user_edit_role' u.id %}">Edit Role</a> |
-                <a href="{% url 'user_reset_password' u.id %}">Reset Password</a>
+                <a href="{% url 'user_reset_password' u.id %}">Reset Password</a> |
+                {% if u.is_active %}
+                <a href="{% url 'user_deactivate' u.id %}" style="color:#dc3545;">Deactivate</a>
+                {% else %}
+                <a href="{% url 'user_reactivate' u.id %}" style="color:green;">Reactivate</a>
+                {% endif %}
             </td>
         </tr>
         {% empty %}
-        <tr><td colspan="4">No users found.</td></tr>
+        <tr><td colspan="5">No users found.</td></tr>
         {% endfor %}
     </table>
 </div>

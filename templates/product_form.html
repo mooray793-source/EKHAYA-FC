@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
 <div class="card" style="max-width:500px;">
-    <h2 style="margin-bottom:16px;">Add Product</h2>
+    <h2 style="margin-bottom:16px;">{% if editing %}Edit Product: {{ product.name }}{% else %}Add Product{% endif %}</h2>
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit" class="btn-gold">Save Product</button>
+        {% if editing %}
+        <a href="{% url 'product_list' %}" style="margin-left:12px;">Cancel</a>
+        {% endif %}
     </form>
 </div>
 {% endblock %}

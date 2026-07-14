@@ -11,11 +11,14 @@
 <div class="card">
     <h3>Locations</h3>
     <table>
-        <tr><th>Store</th><th>Box</th><th>Notes</th></tr>
+        <tr><th>Store</th><th>Box</th><th>Notes</th><th>Actions</th></tr>
         {% for l in locations %}
-        <tr><td>{{ l.store }}</td><td>{{ l.box_number }}</td><td>{{ l.notes }}</td></tr>
+        <tr>
+            <td>{{ l.store }}</td><td>{{ l.box_number }}</td><td>{{ l.notes }}</td>
+            <td><a href="{% url 'location_edit' l.id %}">Edit</a> | <a href="{% url 'location_delete' l.id %}" style="color:#dc3545;">Delete</a></td>
+        </tr>
         {% empty %}
-        <tr><td colspan="3">No locations yet.</td></tr>
+        <tr><td colspan="4">No locations yet.</td></tr>
         {% endfor %}
     </table>
 </div>

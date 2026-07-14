@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:500px;">
+    <h2 style="margin-bottom:16px;color:#dc3545;">⚠ Confirm Delete</h2>
+    <p style="margin-bottom:16px;">Are you sure you want to permanently delete <strong>{{ object_name }}</strong>? This cannot be undone.</p>
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn-gold" style="background:#dc3545;">Yes, Delete</button>
+        <a href="{% url cancel_url %}" style="margin-left:12px;">Cancel</a>
+    </form>
+</div>
+{% endblock %}

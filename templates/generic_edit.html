@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width:500px;">
+    <h2 style="margin-bottom:16px;">{{ title }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn-gold">Save Changes</button>
+        <a href="{% url cancel_url %}" style="margin-left:12px;">Cancel</a>
+    </form>
+</div>
+{% endblock %}
