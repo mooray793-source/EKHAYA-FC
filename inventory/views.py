@@ -6,13 +6,23 @@ from django.core.exceptions import ValidationError
 from django.db.models import Sum, F
 from django.utils import timezone
 from datetime import timedelta
+from django.http import HttpResponse, JsonResponse
+from django.conf import settings as django_settings
+from django.contrib.auth.models import User
+from django.contrib.auth.forms import PasswordChangeForm
+from django.contrib.auth import update_session_auth_hash
+import barcode
+from barcode.writer import ImageWriter
+import io
+
 from .models import (
     Product, Sale, Purchase, StockMovement,
     Category, Supplier, Location, Department, Profile
 )
 from .forms import (
     ProductForm, StockInForm, StockOutForm, SaleForm,
-    CategoryForm, SupplierForm, LocationForm, DepartmentForm
+    CategoryForm, SupplierForm, LocationForm, DepartmentForm,
+    CreateUserForm, AdminResetPasswordForm, RoleUpdateForm
 )
 from .decorators import role_required
 
@@ -94,6 +104,50 @@ def product_add(request):
 
 @login_required
 @role_required('admin', 'manager', 'storekeeper')
+def product_edit(request, product_id):
+    product = Product.objects.get(id=product_id)
+    if request.method == 'POST':
+        form = ProductForm(request.POST, request.FILES, instance=product)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"'{product.name}' updated successfully.")
+            return redirect('product_list')
+    else:
+        form = ProductForm(instance=product)
+    return render(request, 'product_form.html', {'form': form, 'editing': True, 'product': product})
+
+
+@login_required
+@role_required('admin', 'manager')
+def product_delete(request, product_id):
+    product = Product.objects.get(id=product_id)
+    if request.method == 'POST':
+        name = product.name
+        product.delete()
+        messages.success(request, f"'{name}' deleted successfully.")
+        return redirect('product_list')
+    return render(request, 'confirm_delete.html', {'object': product, 'object_name': product.name, 'cancel_url': 'product_list'})
+
+
+@login_required
+def product_barcode(request, product_id):
+    product = Product.objects.get(id=product_id)
+    code128 = barcode.get_barcode_class('code128')
+    barcode_obj = code128(product.code, writer=ImageWriter())
+
+    buffer = io.BytesIO()
+    barcode_obj.write(buffer, options={
+        'write_text': True,
+        'module_height': 8,
+        'font_size': 8,
+        'text_distance': 3,
+    })
+    buffer.seek(0)
+    return HttpResponse(buffer.getvalue(), content_type='image/png')
+
+
+@login_required
+@role_required('admin', 'manager', 'storekeeper')
 def stock_in(request):
     if request.method == 'POST':
         form = StockInForm(request.POST)
@@ -168,6 +222,12 @@ def reports(request):
     recent_sales = Sale.objects.filter(date__gte=thirty_days_ago)
     total_revenue = sum(s.total for s in recent_sales)
 
+    total_cost_of_goods_sold = sum(
+        (s.product.buying_price * s.quantity) for s in recent_sales if s.product
+    )
+    total_profit = total_revenue - total_cost_of_goods_sold
+    profit_margin = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
+
     best_sellers = (
         Sale.objects.filter(date__gte=thirty_days_ago)
         .values('product__name')
@@ -187,6 +247,9 @@ def reports(request):
         'expired': expired,
         'stock_valuation': stock_valuation,
         'total_revenue': total_revenue,
+        'total_cost_of_goods_sold': total_cost_of_goods_sold,
+        'total_profit': total_profit,
+        'profit_margin': profit_margin,
         'recent_sales_count': recent_sales.count(),
         'best_sellers': best_sellers,
         'supplier_purchases': supplier_purchases,
@@ -211,6 +274,33 @@ def category_list(request):
 
 @login_required
 @role_required('admin', 'manager')
+def category_edit(request, pk):
+    obj = Category.objects.get(id=pk)
+    if request.method == 'POST':
+        form = CategoryForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Category updated.")
+            return redirect('category_list')
+    else:
+        form = CategoryForm(instance=obj)
+    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Category: {obj.name}', 'cancel_url': 'category_list'})
+
+
+@login_required
+@role_required('admin', 'manager')
+def category_delete(request, pk):
+    obj = Category.objects.get(id=pk)
+    if request.method == 'POST':
+        name = obj.name
+        obj.delete()
+        messages.success(request, f"Category '{name}' deleted.")
+        return redirect('category_list')
+    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': obj.name, 'cancel_url': 'category_list'})
+
+
+@login_required
+@role_required('admin', 'manager')
 def supplier_list(request):
     if request.method == 'POST':
         form = SupplierForm(request.POST)
@@ -222,6 +312,33 @@ def supplier_list(request):
         form = SupplierForm()
     suppliers = Supplier.objects.all()
     return render(request, 'supplier_list.html', {'form': form, 'suppliers': suppliers})
+
+
+@login_required
+@role_required('admin', 'manager')
+def supplier_edit(request, pk):
+    obj = Supplier.objects.get(id=pk)
+    if request.method == 'POST':
+        form = SupplierForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Supplier updated.")
+            return redirect('supplier_list')
+    else:
+        form = SupplierForm(instance=obj)
+    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Supplier: {obj.name}', 'cancel_url': 'supplier_list'})
+
+
+@login_required
+@role_required('admin', 'manager')
+def supplier_delete(request, pk):
+    obj = Supplier.objects.get(id=pk)
+    if request.method == 'POST':
+        name = obj.name
+        obj.delete()
+        messages.success(request, f"Supplier '{name}' deleted.")
+        return redirect('supplier_list')
+    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': obj.name, 'cancel_url': 'supplier_list'})
 
 
 @login_required
@@ -241,6 +358,33 @@ def location_list(request):
 
 @login_required
 @role_required('admin', 'manager')
+def location_edit(request, pk):
+    obj = Location.objects.get(id=pk)
+    if request.method == 'POST':
+        form = LocationForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Location updated.")
+            return redirect('location_list')
+    else:
+        form = LocationForm(instance=obj)
+    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Location: {obj}', 'cancel_url': 'location_list'})
+
+
+@login_required
+@role_required('admin', 'manager')
+def location_delete(request, pk):
+    obj = Location.objects.get(id=pk)
+    if request.method == 'POST':
+        name = str(obj)
+        obj.delete()
+        messages.success(request, f"Location '{name}' deleted.")
+        return redirect('location_list')
+    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': str(obj), 'cancel_url': 'location_list'})
+
+
+@login_required
+@role_required('admin', 'manager')
 def department_list(request):
     if request.method == 'POST':
         form = DepartmentForm(request.POST)
@@ -254,9 +398,31 @@ def department_list(request):
     return render(request, 'department_list.html', {'form': form, 'departments': departments})
 
 
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings as django_settings
+@login_required
+@role_required('admin', 'manager')
+def department_edit(request, pk):
+    obj = Department.objects.get(id=pk)
+    if request.method == 'POST':
+        form = DepartmentForm(request.POST, instance=obj)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Department updated.")
+            return redirect('department_list')
+    else:
+        form = DepartmentForm(instance=obj)
+    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Department: {obj.name}', 'cancel_url': 'department_list'})
+
+
+@login_required
+@role_required('admin', 'manager')
+def department_delete(request, pk):
+    obj = Department.objects.get(id=pk)
+    if request.method == 'POST':
+        name = obj.name
+        obj.delete()
+        messages.success(request, f"Department '{name}' deleted.")
+        return redirect('department_list')
+    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': obj.name, 'cancel_url': 'department_list'})
 
 
 @login_required
@@ -267,10 +433,6 @@ def verify_admin_pin(request):
             return JsonResponse({'success': True})
         return JsonResponse({'success': False})
     return JsonResponse({'success': False})
-
-
-from django.contrib.auth.forms import PasswordChangeForm
-from django.contrib.auth import update_session_auth_hash
 
 
 @login_required
@@ -287,10 +449,6 @@ def change_password(request):
     else:
         form = PasswordChangeForm(user=request.user)
     return render(request, 'change_password.html', {'form': form})
-
-
-from django.contrib.auth.models import User
-from .forms import CreateUserForm, AdminResetPasswordForm, RoleUpdateForm
 
 
 @login_required
@@ -352,164 +510,6 @@ def user_edit_role(request, user_id):
     else:
         form = RoleUpdateForm(instance=profile)
     return render(request, 'user_edit_role.html', {'form': form, 'target_user': target_user})
-
-
-import barcode
-from barcode.writer import ImageWriter
-from django.http import HttpResponse
-import io
-
-
-@login_required
-def product_barcode(request, product_id):
-    product = Product.objects.get(id=product_id)
-    code128 = barcode.get_barcode_class('code128')
-    barcode_obj = code128(product.code, writer=ImageWriter())
-
-    buffer = io.BytesIO()
-    barcode_obj.write(buffer, options={
-        'write_text': True,
-        'module_height': 8,
-        'font_size': 8,
-        'text_distance': 3,
-    })
-    buffer.seek(0)
-    return HttpResponse(buffer.getvalue(), content_type='image/png')
-
-
-@login_required
-@role_required('admin', 'manager', 'storekeeper')
-def product_edit(request, product_id):
-    product = Product.objects.get(id=product_id)
-    if request.method == 'POST':
-        form = ProductForm(request.POST, request.FILES, instance=product)
-        if form.is_valid():
-            form.save()
-            messages.success(request, f"'{product.name}' updated successfully.")
-            return redirect('product_list')
-    else:
-        form = ProductForm(instance=product)
-    return render(request, 'product_form.html', {'form': form, 'editing': True, 'product': product})
-
-
-@login_required
-@role_required('admin', 'manager')
-def product_delete(request, product_id):
-    product = Product.objects.get(id=product_id)
-    if request.method == 'POST':
-        name = product.name
-        product.delete()
-        messages.success(request, f"'{name}' deleted successfully.")
-        return redirect('product_list')
-    return render(request, 'confirm_delete.html', {'object': product, 'object_name': product.name, 'cancel_url': 'product_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def category_edit(request, pk):
-    obj = Category.objects.get(id=pk)
-    if request.method == 'POST':
-        form = CategoryForm(request.POST, instance=obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Category updated.")
-            return redirect('category_list')
-    else:
-        form = CategoryForm(instance=obj)
-    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Category: {obj.name}', 'cancel_url': 'category_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def category_delete(request, pk):
-    obj = Category.objects.get(id=pk)
-    if request.method == 'POST':
-        name = obj.name
-        obj.delete()
-        messages.success(request, f"Category '{name}' deleted.")
-        return redirect('category_list')
-    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': obj.name, 'cancel_url': 'category_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def supplier_edit(request, pk):
-    obj = Supplier.objects.get(id=pk)
-    if request.method == 'POST':
-        form = SupplierForm(request.POST, instance=obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Supplier updated.")
-            return redirect('supplier_list')
-    else:
-        form = SupplierForm(instance=obj)
-    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Supplier: {obj.name}', 'cancel_url': 'supplier_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def supplier_delete(request, pk):
-    obj = Supplier.objects.get(id=pk)
-    if request.method == 'POST':
-        name = obj.name
-        obj.delete()
-        messages.success(request, f"Supplier '{name}' deleted.")
-        return redirect('supplier_list')
-    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': obj.name, 'cancel_url': 'supplier_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def location_edit(request, pk):
-    obj = Location.objects.get(id=pk)
-    if request.method == 'POST':
-        form = LocationForm(request.POST, instance=obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Location updated.")
-            return redirect('location_list')
-    else:
-        form = LocationForm(instance=obj)
-    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Location: {obj}', 'cancel_url': 'location_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def location_delete(request, pk):
-    obj = Location.objects.get(id=pk)
-    if request.method == 'POST':
-        name = str(obj)
-        obj.delete()
-        messages.success(request, f"Location '{name}' deleted.")
-        return redirect('location_list')
-    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': str(obj), 'cancel_url': 'location_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def department_edit(request, pk):
-    obj = Department.objects.get(id=pk)
-    if request.method == 'POST':
-        form = DepartmentForm(request.POST, instance=obj)
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Department updated.")
-            return redirect('department_list')
-    else:
-        form = DepartmentForm(instance=obj)
-    return render(request, 'generic_edit.html', {'form': form, 'title': f'Edit Department: {obj.name}', 'cancel_url': 'department_list'})
-
-
-@login_required
-@role_required('admin', 'manager')
-def department_delete(request, pk):
-    obj = Department.objects.get(id=pk)
-    if request.method == 'POST':
-        name = obj.name
-        obj.delete()
-        messages.success(request, f"Department '{name}' deleted.")
-        return redirect('department_list')
-    return render(request, 'confirm_delete.html', {'object': obj, 'object_name': obj.name, 'cancel_url': 'department_list'})
 
 
 @login_required

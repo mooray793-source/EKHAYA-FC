@@ -2,10 +2,55 @@
 {% block content %}
 <div class="card" style="max-width:500px;">
     <h2 style="margin-bottom:16px;">Record a Sale</h2>
-    <form method="post">
+    <form method="post" id="saleForm">
         {% csrf_token %}
         {{ form.as_p }}
+        <div class="card" style="background:#fff8e6;margin-top:12px;margin-bottom:12px;">
+            <strong>Total: MWK <span id="saleTotal">0</span></strong>
+        </div>
         <button type="submit" class="btn-gold">Save Sale</button>
     </form>
 </div>
+
+<script>
+    const productPrices = {
+        {% for product in form.fields.product.queryset %}
+        "{{ product.id }}": {{ product.selling_price }},
+        {% endfor %}
+    };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const productSelect = document.getElementById('id_product');
+        const quantityInput = document.getElementById('id_quantity');
+        const priceInput = document.getElementById('id_price');
+        const totalDisplay = document.getElementById('saleTotal');
+
+        function updatePriceAndTotal() {
+            const selectedId = productSelect.value;
+            if (selectedId && productPrices[selectedId] !== undefined) {
+                priceInput.value = productPrices[selectedId];
+            }
+            calculateTotal();
+        }
+
+        function calculateTotal() {
+            const qty = parseFloat(quantityInput.value) || 0;
+            const price = parseFloat(priceInput.value) || 0;
+            const total = qty * price;
+            totalDisplay.textContent = total.toLocaleString();
+        }
+
+        if (productSelect) {
+            productSelect.addEventListener('change', updatePriceAndTotal);
+        }
+        if (quantityInput) {
+            quantityInput.addEventListener('input', calculateTotal);
+        }
+        if (priceInput) {
+            priceInput.addEventListener('input', calculateTotal);
+        }
+
+        updatePriceAndTotal();
+    });
+</script>
 {% endblock %}

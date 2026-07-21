@@ -8,9 +8,12 @@
 </div>
 
 <div class="card">
-    <h3>Sales (Last 30 Days)</h3>
+    <h3>Sales & Profit (Last 30 Days)</h3>
     <p>Total transactions: {{ recent_sales_count }}</p>
     <p>Total revenue: MWK {{ total_revenue|floatformat:0 }}</p>
+    <p>Cost of goods sold: MWK {{ total_cost_of_goods_sold|floatformat:0 }}</p>
+    <p><strong>Net profit: MWK {{ total_profit|floatformat:0 }}</strong></p>
+    <p>Profit margin: {{ profit_margin|floatformat:1 }}%</p>
 </div>
 
 <div class="card">
